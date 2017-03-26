@@ -6,6 +6,7 @@ import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.RequiresApi;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -30,7 +31,12 @@ public class SlipperyLayout extends RelativeLayout {
     private @interface State {
     }
 
-    @IntDef({Gravity.LEFT, Gravity.RIGHT, Gravity.TOP, Gravity.BOTTOM})
+    public static final int LEFT = 1;
+    public static final int RIGHT = 1 << 1;
+    public static final int TOP = 1 << 2;
+    public static final int BOTTOM = 1 << 3;
+
+    @IntDef({LEFT, RIGHT, TOP, BOTTOM})
 
     private @interface SlideGravity {
     }
@@ -165,6 +171,7 @@ public class SlipperyLayout extends RelativeLayout {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         mMaxSlideDistacneX = mMenuView.getMeasuredWidth();
         mMaxSlideDistanceY = mMenuView.getMeasuredHeight();
+
     }
 
     @Override
@@ -248,16 +255,35 @@ public class SlipperyLayout extends RelativeLayout {
                 getParent().requestDisallowInterceptTouchEvent(true);
                 break;
             case MotionEvent.ACTION_MOVE:
-
+                int moveGravity = getSlideGravityByMotionEvent(ev);
+                //There need rethink.
+                if (((moveGravity | mSlideGravity) & (RIGHT | LEFT)) != 0 &&
+                        ((moveGravity | mSlideGravity) & (TOP | BOTTOM)) != 0
+                        && mState != STATE_DRAGGING) {
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                }
                 break;
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    /**
+     * Invokde indirectly in {@link ViewCompat#postInvalidateOnAnimation(View)}
+     */
+    @Override
+    public void computeScroll() {
+        if (mDrager.continueSettling(true)) {
+            ViewCompat.postInvalidateOnAnimation(this);
+        }
     }
 
     private class ViewDragCallback extends ViewDragHelper.Callback {
 
         private final int mGravity; //滑动的方向
         private ViewDragHelper mDrager;
+
+        private int currentTransferX;
+        private int currentTransferY;
 
         ViewDragCallback(int mGravity) {
             this.mGravity = mGravity;
@@ -269,8 +295,53 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return false;
+            return isCaptured(child) && isLock();
         }
+
+        @Override
+        public int getViewHorizontalDragRange(View child) {
+            if ((mGravity & (RIGHT | LEFT)) == 0) {
+                return 0;
+            }
+            return mMaxSlideDistacneX;
+        }
+
+        @Override
+        public int getViewVerticalDragRange(View child) {
+            if ((mGravity & (TOP | BOTTOM)) == 0) {
+                return 0;
+            }
+            return mMaxSlideDistanceY;
+        }
+
+        @Override
+        public int clampViewPositionHorizontal(View child, int left, int dx) {
+            if ((mGravity & (RIGHT | LEFT)) == 0) {
+                return 0;
+            }
+            mState = STATE_DRAGGING;
+            int arg = mGravity == LEFT ? -1 : 1;
+            if (child == mContentView) {
+                // TODO: 2017/3/26
+                return Math.min(Math.max(arg * mMaxSlideDistacneX, left), getMeasuredWidth());
+            }
+            if (child == mMenuView) {
+                // TODO: 2017/3/26  
+                return 0;
+            }
+        }
+
+        @Override
+        public int clampViewPositionVertical(View child, int top, int dy) {
+            if ((mGravity & (TOP | BOTTOM)) == 0) {
+                return 0;
+            }
+            mState = STATE_DRAGGING;
+        }
+    }
+
+    private boolean isCaptured(View child) {
+        return child == mMenuView || child == mContentView;
     }
 
 }
