@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SlipperyLayout">
+        <attr name="lock" format="boolean" />
+        <attr name="slideGravity" format="enum">
+            <enum name="left" value="1" />
+            <enum name="right" value="2" />
+            <enum name="top" value="4" />
+            <enum name="bottom" value="8" />
+        </attr>
+        <attr name="menu" format="reference" />
+        <attr name="content" format="reference" />
+    </declare-styleable>
+</resources>

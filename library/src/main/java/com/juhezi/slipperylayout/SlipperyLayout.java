@@ -2,18 +2,22 @@ package com.juhezi.slipperylayout;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.LayoutRes;
-import android.support.annotation.RequiresApi;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * Created by Juhezi on 2017/3/26.
@@ -27,6 +31,7 @@ public class SlipperyLayout extends RelativeLayout {
 
     public static final int STATE_SETTLING = ViewDragHelper.STATE_SETTLING;
 
+    @Retention(RetentionPolicy.SOURCE)
     @IntDef({STATE_IDLE, STATE_DRAGGING, STATE_SETTLING})
     private @interface State {
     }
@@ -36,17 +41,17 @@ public class SlipperyLayout extends RelativeLayout {
     public static final int TOP = 1 << 2;
     public static final int BOTTOM = 1 << 3;
 
+    @Retention(RetentionPolicy.SOURCE)
     @IntDef({LEFT, RIGHT, TOP, BOTTOM})
-
     private @interface SlideGravity {
     }
 
-    private static final int MIN_FLING_VELOCITY = 600;  //dips per second
+    private static final int MIN_FLING_VELOCITY = 800;  //dips per second
 
     private boolean isLock = false;
     private boolean isMenuViewVisible = false;
 
-    private static final int DEFAULT_SLIDE_GRAVITY = Gravity.LEFT;
+    private static final int DEFAULT_SLIDE_GRAVITY = LEFT;
 
     @State
     private int mState = STATE_IDLE;
@@ -81,21 +86,48 @@ public class SlipperyLayout extends RelativeLayout {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public SlipperyLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        loadDataFromAttrs();
+        loadDataFromAttrs(context, attrs);
         initView(context);
-        placeView();
+        placeView(context);
         mCallback = new ViewDragCallback(mSlideGravity);
         mDrager = ViewDragHelper.create(this, mCallback);
         mCallback.setDrager(mDrager);
     }
 
-    private void loadDataFromAttrs() {
-
+    public void setSlideGravity(@SlideGravity int slideGravity) {
+        this.mSlideGravity = slideGravity;
+        if (mCallback != null) {
+            mCallback.setGravity(mSlideGravity);
+        }
     }
 
-    private void placeView() {
-        if (mMenuView == null || mContentView == null)
-            throw new NullPointerException("The menuView and contentView can not be null!");
+    private void loadDataFromAttrs(Context context, AttributeSet attrs) {
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SlipperyLayout);
+        isLock = typedArray.getBoolean(R.styleable.SlipperyLayout_lock, false);
+        int tempSlideGravity = typedArray.getInt(R.styleable.SlipperyLayout_slideGravity, DEFAULT_SLIDE_GRAVITY);
+        /*switch (tempSlideGravity) {
+            case 1:
+                mSlideGravity = LEFT;
+                break;
+            case 2:
+                mSlideGravity = RIGHT;
+                break;
+            case 4:
+                mSlideGravity = TOP;
+                break;
+            case 8:
+                mSlideGravity = BOTTOM;
+                break;
+        }*/
+//        mContentViewLayoutRes = typedArray(R.styleable.SlipperyLayout_content, R.layout.content);
+        typedArray.recycle();
+    }
+
+    private void placeView(Context context) {
+        if (mMenuView == null || mContentView == null) {
+            mContentView = new View(context);
+            mMenuView = new View(context);
+        }
         addView(mContentView, 0);
         addView(mMenuView, 1);
     }
@@ -108,11 +140,11 @@ public class SlipperyLayout extends RelativeLayout {
     }
 
     public void openMenuView() {
-
+        // TODO: 2017/3/27
     }
 
     public void closeMenuView() {
-
+        // TODO: 2017/3/27
     }
 
     public boolean isLock() {
@@ -122,7 +154,7 @@ public class SlipperyLayout extends RelativeLayout {
     public boolean isMenuViewVisible() {
         return isMenuViewVisible;
     }
-
+/*
     public int getContentViewLayoutRes() {
         return mContentViewLayoutRes;
     }
@@ -135,7 +167,7 @@ public class SlipperyLayout extends RelativeLayout {
         return mContentView;
     }
 
-    public void setmContentView(View contentView) {
+    public void setContentView(View contentView) {
         this.mContentView = contentView;
     }
 
@@ -153,14 +185,19 @@ public class SlipperyLayout extends RelativeLayout {
 
     public void setMenuView(View menuView) {
         this.mMenuView = menuView;
-    }
+    }*/
 
     private int menuLeft;
     private int menuTop;
     private int menuRight;
     private int menuBottom;
 
-    private int mMaxSlideDistacneX;
+    private int contentLeft;
+    private int contentTop;
+    private int contentRight;
+    private int contentBottom;
+
+    private int mMaxSlideDistanceX;
     private int mMaxSlideDistanceY;
 
     private int lastX = 0;
@@ -169,44 +206,47 @@ public class SlipperyLayout extends RelativeLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        mMaxSlideDistacneX = mMenuView.getMeasuredWidth();
+        mMaxSlideDistanceX = mMenuView.getMeasuredWidth();
         mMaxSlideDistanceY = mMenuView.getMeasuredHeight();
-
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        contentLeft = l;
+        contentTop = t;
+        contentRight = r;
+        contentBottom = b;
         for (int i = getChildCount() - 1; i > 1; i--) {
             removeViewAt(i);
         }
         switch (mSlideGravity) {
-            case Gravity.LEFT:
-                menuTop = t;
-                menuLeft = r;
-                menuRight = r + mMenuView.getMeasuredWidth();
-                menuBottom = b;
+            case LEFT:
+                menuTop = contentTop;
+                menuLeft = contentRight;
+                menuRight = contentRight + mMenuView.getMeasuredWidth();
+                menuBottom = contentBottom;
                 break;
-            case Gravity.RIGHT:
-                menuTop = t;
-                menuLeft = l - mMenuView.getMeasuredWidth();
-                menuRight = l;
-                menuBottom = b;
+            case RIGHT:
+                menuTop = contentTop;
+                menuLeft = contentLeft - mMenuView.getMeasuredWidth();
+                menuRight = contentLeft;
+                menuBottom = contentBottom;
                 break;
-            case Gravity.TOP:
-                menuLeft = l;
-                menuTop = b;
-                menuRight = r;
-                menuBottom = b + mMenuView.getMeasuredHeight();
+            case TOP:
+                menuLeft = contentLeft;
+                menuTop = contentBottom;
+                menuRight = contentRight;
+                menuBottom = contentBottom + mMenuView.getMeasuredHeight();
                 break;
-            case Gravity.BOTTOM:
-                menuLeft = l;
-                menuTop = t - mMenuView.getMeasuredHeight();
-                menuRight = r;
-                menuBottom = t;
+            case BOTTOM:
+                menuLeft = contentLeft;
+                menuTop = contentTop - mMenuView.getMeasuredHeight();
+                menuRight = contentRight;
+                menuBottom = contentTop;
                 break;
         }
-        mContentView.layout(l, t, r, b);
-        mContentView.layout(menuLeft, menuTop, menuRight, menuBottom);
+        mContentView.layout(contentLeft, contentTop, contentRight, contentBottom);
+        mMenuView.layout(menuLeft, menuTop, menuRight, menuBottom);
     }
 
     @Override
@@ -235,15 +275,15 @@ public class SlipperyLayout extends RelativeLayout {
         lastY = y;
         if (Math.abs(dx) > Math.abs(dy)) {   //left or right
             if (dx > 0) {
-                return Gravity.RIGHT;
+                return RIGHT;
             } else {
-                return Gravity.LEFT;
+                return LEFT;
             }
         } else {    //top or bottom
             if (dy > 0) {
-                return Gravity.BOTTOM;
+                return BOTTOM;
             } else {
-                return Gravity.TOP;
+                return TOP;
             }
         }
     }
@@ -279,8 +319,12 @@ public class SlipperyLayout extends RelativeLayout {
 
     private class ViewDragCallback extends ViewDragHelper.Callback {
 
-        private final int mGravity; //滑动的方向
+        private int mGravity; //滑动的方向
         private ViewDragHelper mDrager;
+
+        public void setGravity(int gravity) {
+            this.mGravity = gravity;
+        }
 
         private int currentTransferX;
         private int currentTransferY;
@@ -295,20 +339,21 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return isCaptured(child) && isLock();
+            return isCaptured(child) && !isLock();
         }
 
         @Override
         public int getViewHorizontalDragRange(View child) {
-            if ((mGravity & (RIGHT | LEFT)) == 0) {
+
+            if (((RIGHT | LEFT) & mGravity) == 0) {
                 return 0;
             }
-            return mMaxSlideDistacneX;
+            return mMaxSlideDistanceX;
         }
 
         @Override
         public int getViewVerticalDragRange(View child) {
-            if ((mGravity & (TOP | BOTTOM)) == 0) {
+            if (((TOP | BOTTOM) & mGravity) == 0) {
                 return 0;
             }
             return mMaxSlideDistanceY;
@@ -316,27 +361,140 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public int clampViewPositionHorizontal(View child, int left, int dx) {
-            if ((mGravity & (RIGHT | LEFT)) == 0) {
+            if (isLock) return 0;
+            if (((RIGHT | LEFT) & mGravity) == 0) {
                 return 0;
             }
             mState = STATE_DRAGGING;
-            int arg = mGravity == LEFT ? -1 : 1;
+            int arg1 = mGravity == LEFT ? -1 : 1;
             if (child == mContentView) {
-                // TODO: 2017/3/26
-                return Math.min(Math.max(arg * mMaxSlideDistacneX, left), getMeasuredWidth());
+                return getValueWithLimit(arg1 * mMaxSlideDistanceX, 0, left);
             }
+            int arg2 = mGravity == LEFT ? 1 : 0;
             if (child == mMenuView) {
-                // TODO: 2017/3/26  
-                return 0;
+                return getValueWithLimit(arg2 * getMeasuredWidth() - mMaxSlideDistanceX, arg2 * getMeasuredWidth(), left);
             }
+            return 0;
         }
 
         @Override
         public int clampViewPositionVertical(View child, int top, int dy) {
-            if ((mGravity & (TOP | BOTTOM)) == 0) {
+            if (isLock) return 0;
+            if (((TOP | BOTTOM) & mGravity) == 0) {
                 return 0;
             }
             mState = STATE_DRAGGING;
+            int arg1 = mGravity == TOP ? -1 : 1;
+            if (child == mContentView) {
+                return getValueWithLimit(arg1 * mMaxSlideDistanceY, 0, top);
+            }
+            int arg2 = mGravity == TOP ? 1 : 0;
+            if (child == mMenuView) {
+                return getValueWithLimit(arg2 * getMeasuredHeight() - mMaxSlideDistanceY, arg2 * getMeasuredHeight(), top);
+            }
+            return 0;
+        }
+
+        @Override
+        public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
+            if (changedView == mContentView) {
+                currentTransferX = left - contentLeft;
+                currentTransferY = top - contentTop;
+                mMenuView.offsetLeftAndRight(dx);
+                mMenuView.offsetTopAndBottom(dy);
+            }
+            if (changedView == mMenuView) {
+                currentTransferX = left - menuLeft;
+                currentTransferY = top - menuTop;
+                mContentView.offsetLeftAndRight(dx);
+                mContentView.offsetTopAndBottom(dy);
+            }
+            if (currentTransferX == 0 && currentTransferY == 0) {
+                mMenuView.setVisibility(View.GONE);
+                isMenuViewVisible = false;
+                mState = STATE_IDLE;
+            } else {
+                mMenuView.setVisibility(View.VISIBLE);
+                isMenuViewVisible = true;
+                mState = STATE_IDLE;
+            }
+        }
+
+        @Override
+        public void onViewReleased(View releasedChild, float xvel, float yvel) {
+            mState = STATE_SETTLING;
+            boolean isSlideToLeft;
+            boolean isSlideToTop;
+            int destX = contentLeft;
+            int destY = contentTop;
+            switch (mGravity) {
+                case LEFT:
+                    if (currentTransferX >= -mMaxSlideDistanceX / 2) {
+                        isSlideToLeft = false;
+                    } else {
+                        isSlideToLeft = true;
+                    }
+                    if (xvel > MIN_FLING_VELOCITY) {
+                        isSlideToLeft = false;
+                    }
+                    if (xvel < -MIN_FLING_VELOCITY) {
+                        isSlideToLeft = true;
+                    }
+                    destX = isSlideToLeft ? contentLeft - mMaxSlideDistanceX : contentLeft;
+                    break;
+                case RIGHT:
+                    if (currentTransferX >= mMaxSlideDistanceX / 2) {
+                        isSlideToLeft = false;
+                    } else {
+                        isSlideToLeft = true;
+                    }
+                    if (xvel > MIN_FLING_VELOCITY) {
+                        isSlideToLeft = false;
+                    }
+                    if (xvel < -MIN_FLING_VELOCITY) {
+                        isSlideToLeft = true;
+                    }
+                    destX = isSlideToLeft ? contentLeft : contentLeft + mMaxSlideDistanceX;
+                    break;
+                case TOP:
+                    if (currentTransferY >= -mMaxSlideDistanceY / 2) {
+                        isSlideToTop = false;
+                    } else {
+                        isSlideToTop = true;
+                    }
+                    if (yvel > MIN_FLING_VELOCITY) {
+                        isSlideToTop = false;
+                    }
+                    if (yvel < -MIN_FLING_VELOCITY) {
+                        isSlideToTop = true;
+                    }
+                    destY = isSlideToTop ? contentTop - mMaxSlideDistanceY : contentTop;
+                    break;
+                case BOTTOM:
+                    if (currentTransferY >= mMaxSlideDistanceY / 2) {
+                        isSlideToTop = false;
+                    } else {
+                        isSlideToTop = true;
+                    }
+                    if (yvel > MIN_FLING_VELOCITY) {
+                        isSlideToTop = false;
+                    }
+                    if (yvel < -MIN_FLING_VELOCITY) {
+                        isSlideToTop = true;
+                    }
+                    destY = isSlideToTop ? contentTop : contentTop + mMaxSlideDistanceY;
+                    break;
+            }
+            mDrager.smoothSlideViewTo(mContentView, destX, destY);
+            ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
+        }
+    }
+
+    private int getValueWithLimit(int limit1, int limit2, int value) {
+        if (limit1 > limit2) {
+            return Math.min(Math.max(limit2, value), limit1);
+        } else {
+            return Math.min(Math.max(limit1, value), limit2);
         }
     }
 
