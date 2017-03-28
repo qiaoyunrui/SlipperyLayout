@@ -17,11 +17,10 @@ import android.widget.RelativeLayout;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import static android.content.ContentValues.TAG;
-
 /**
  * Created by Juhezi on 2017/3/26.
  */
+
 
 public class SlipperyLayout extends RelativeLayout {
 
@@ -40,6 +39,8 @@ public class SlipperyLayout extends RelativeLayout {
     public static final int RIGHT = 1 << 1;
     public static final int TOP = 1 << 2;
     public static final int BOTTOM = 1 << 3;
+
+    public static final int[] GRAVITY_ARRAY = {LEFT, RIGHT, TOP, BOTTOM};
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({LEFT, RIGHT, TOP, BOTTOM})
@@ -70,6 +71,9 @@ public class SlipperyLayout extends RelativeLayout {
 
     private ViewDragHelper mDrager;
     private ViewDragCallback mCallback;
+
+    private int contentDestX;
+    private int contentDestY;
 
     public SlipperyLayout(Context context) {
         this(context, null);
@@ -104,29 +108,15 @@ public class SlipperyLayout extends RelativeLayout {
     private void loadDataFromAttrs(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SlipperyLayout);
         isLock = typedArray.getBoolean(R.styleable.SlipperyLayout_lock, false);
-        int tempSlideGravity = typedArray.getInt(R.styleable.SlipperyLayout_slideGravity, DEFAULT_SLIDE_GRAVITY);
-        /*switch (tempSlideGravity) {
-            case 1:
-                mSlideGravity = LEFT;
-                break;
-            case 2:
-                mSlideGravity = RIGHT;
-                break;
-            case 4:
-                mSlideGravity = TOP;
-                break;
-            case 8:
-                mSlideGravity = BOTTOM;
-                break;
-        }*/
-//        mContentViewLayoutRes = typedArray(R.styleable.SlipperyLayout_content, R.layout.content);
+        mSlideGravity = GRAVITY_ARRAY[typedArray.getInt(R.styleable.SlipperyLayout_slideGravity, 0)];
+        mContentViewLayoutRes = typedArray.getResourceId(R.styleable.SlipperyLayout_content, 0);
+        mMenuViewLayoutRes = typedArray.getResourceId(R.styleable.SlipperyLayout_menu, 0);
         typedArray.recycle();
     }
 
     private void placeView(Context context) {
         if (mMenuView == null || mContentView == null) {
-            mContentView = new View(context);
-            mMenuView = new View(context);
+            throw new NullPointerException("The content and menu can not be null!");
         }
         addView(mContentView, 0);
         addView(mMenuView, 1);
@@ -140,11 +130,17 @@ public class SlipperyLayout extends RelativeLayout {
     }
 
     public void openMenuView() {
-        // TODO: 2017/3/27
+        if (isMenuViewVisible) return;
+        mDrager.smoothSlideViewTo(mContentView, contentDestX, contentDestY);
+        ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
+        isMenuViewVisible = true;
     }
 
     public void closeMenuView() {
-        // TODO: 2017/3/27
+        if (!isMenuViewVisible) return;
+        mDrager.smoothSlideViewTo(mContentView, contentLeft, contentTop);
+        ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
+        isMenuViewVisible = false;
     }
 
     public boolean isLock() {
@@ -154,38 +150,6 @@ public class SlipperyLayout extends RelativeLayout {
     public boolean isMenuViewVisible() {
         return isMenuViewVisible;
     }
-/*
-    public int getContentViewLayoutRes() {
-        return mContentViewLayoutRes;
-    }
-
-    public void setContentViewLayoutRes(int contentViewLayoutRes) {
-        this.mContentViewLayoutRes = contentViewLayoutRes;
-    }
-
-    public View getContentView() {
-        return mContentView;
-    }
-
-    public void setContentView(View contentView) {
-        this.mContentView = contentView;
-    }
-
-    public int getMenuViewLayoutRes() {
-        return mMenuViewLayoutRes;
-    }
-
-    public void setMenuViewLayoutRes(int menuViewLayoutRes) {
-        this.mMenuViewLayoutRes = menuViewLayoutRes;
-    }
-
-    public View getMenuView() {
-        return mMenuView;
-    }
-
-    public void setMenuView(View menuView) {
-        this.mMenuView = menuView;
-    }*/
 
     private int menuLeft;
     private int menuTop;
@@ -225,24 +189,33 @@ public class SlipperyLayout extends RelativeLayout {
                 menuLeft = contentRight;
                 menuRight = contentRight + mMenuView.getMeasuredWidth();
                 menuBottom = contentBottom;
+                contentDestX = contentLeft - mMaxSlideDistanceX;
+                contentDestY = contentTop;
                 break;
             case RIGHT:
                 menuTop = contentTop;
                 menuLeft = contentLeft - mMenuView.getMeasuredWidth();
                 menuRight = contentLeft;
                 menuBottom = contentBottom;
+                contentDestX = contentLeft + mMaxSlideDistanceX;
+                contentDestY = contentTop;
                 break;
             case TOP:
                 menuLeft = contentLeft;
                 menuTop = contentBottom;
                 menuRight = contentRight;
                 menuBottom = contentBottom + mMenuView.getMeasuredHeight();
+                contentDestX = contentLeft;
+                contentDestY = contentTop - mMaxSlideDistanceY;
                 break;
             case BOTTOM:
                 menuLeft = contentLeft;
                 menuTop = contentTop - mMenuView.getMeasuredHeight();
                 menuRight = contentRight;
                 menuBottom = contentTop;
+                contentDestX = contentLeft;
+                contentDestY = contentTop + mMaxSlideDistanceY;
+
                 break;
         }
         mContentView.layout(contentLeft, contentTop, contentRight, contentBottom);

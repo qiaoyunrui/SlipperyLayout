@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="com.juhezi.slipperylayoutsample.MainActivity">
 
     <com.juhezi.slipperylayout.SlipperyLayout
@@ -13,6 +14,19 @@
         app:content="@layout/content"
         app:lock="false"
         app:menu="@layout/menu"
-        app:slideGravity="bottom" />
+        app:slideGravity="top" />
 
-</RelativeLayout>
+    <Button
+        android:id="@+id/btn_open"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="open" />
+
+    <Button
+        android:id="@+id/btn_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="close" />
+
+
+</LinearLayout>
