@@ -2,15 +2,44 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="100dp"
-    android:orientation="vertical">
+    android:orientation="horizontal">
 
-    <TextView
+    <RelativeLayout
+        android:id="@+id/rl_like"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="Menu"
-        android:background="@android:color/darker_gray"
-        android:textColor="@color/colorAccent"
-        android:textSize="25sp" />
+        android:layout_weight="1"
+        android:background="@android:color/holo_blue_dark"
+        android:clickable="true"
+        android:foreground="?selectableItemBackgroundBorderless">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="❤"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_unlike"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@android:color/holo_green_light"
+        android:clickable="true"
+        android:foreground="?selectableItemBackgroundBorderless">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="💔"
+            android:textColor="@android:color/black"
+            android:textSize="30sp" />
+
+    </RelativeLayout>
 
 </LinearLayout>

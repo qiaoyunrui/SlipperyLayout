@@ -10,7 +10,8 @@
     <com.juhezi.slipperylayout.SlipperyLayout
         android:id="@+id/sl_test"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="200dp"
+        android:layout_margin="8dp"
         app:content="@layout/content"
         app:lock="false"
         app:menu="@layout/menu"
@@ -20,13 +21,25 @@
         android:id="@+id/btn_open"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="open" />
+        android:layout_margin="8dp"
+        android:backgroundTint="@android:color/holo_blue_bright"
+        android:text="@string/open" />
 
     <Button
         android:id="@+id/btn_close"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="close" />
+        android:layout_margin="8dp"
+        android:backgroundTint="@android:color/holo_red_light"
+        android:text="@string/close" />
+
+    <Button
+        android:id="@+id/btn_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:backgroundTint="@android:color/holo_orange_light"
+        android:text="@string/list" />
 
 
 </LinearLayout>

@@ -2,15 +2,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/holo_purple"
     android:orientation="vertical">
 
     <TextView
+        android:id="@+id/tv_show"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#c9c9c9"
         android:gravity="center"
-        android:text="Hello World 😝"
         android:textColor="@android:color/black"
-        android:textSize="30sp" />
+        android:textSize="25sp" />
+
 
 </LinearLayout>

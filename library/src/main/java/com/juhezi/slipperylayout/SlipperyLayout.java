@@ -9,6 +9,7 @@ import android.support.annotation.LayoutRes;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,6 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 
 
 public class SlipperyLayout extends RelativeLayout {
+
+    public static final String TAG = "SlipperyLayout";
 
     public static final int STATE_IDLE = ViewDragHelper.STATE_IDLE;
 
@@ -90,23 +93,16 @@ public class SlipperyLayout extends RelativeLayout {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public SlipperyLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        loadDataFromAttrs(context, attrs);
+        loadDataFromAttrs(context, attrs, defStyleAttr, defStyleRes);
         initView(context);
-        placeView(context);
+        placeView();
         mCallback = new ViewDragCallback(mSlideGravity);
         mDrager = ViewDragHelper.create(this, mCallback);
         mCallback.setDrager(mDrager);
     }
 
-    public void setSlideGravity(@SlideGravity int slideGravity) {
-        this.mSlideGravity = slideGravity;
-        if (mCallback != null) {
-            mCallback.setGravity(mSlideGravity);
-        }
-    }
-
-    private void loadDataFromAttrs(Context context, AttributeSet attrs) {
-        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SlipperyLayout);
+    private void loadDataFromAttrs(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SlipperyLayout, defStyleAttr, defStyleRes);
         isLock = typedArray.getBoolean(R.styleable.SlipperyLayout_lock, false);
         mSlideGravity = GRAVITY_ARRAY[typedArray.getInt(R.styleable.SlipperyLayout_slideGravity, 0)];
         mContentViewLayoutRes = typedArray.getResourceId(R.styleable.SlipperyLayout_content, 0);
@@ -114,7 +110,7 @@ public class SlipperyLayout extends RelativeLayout {
         typedArray.recycle();
     }
 
-    private void placeView(Context context) {
+    private void placeView() {
         if (mMenuView == null || mContentView == null) {
             throw new NullPointerException("The content and menu can not be null!");
         }
@@ -130,17 +126,24 @@ public class SlipperyLayout extends RelativeLayout {
     }
 
     public void openMenuView() {
-        if (isMenuViewVisible) return;
+        if (isMenuViewVisible || isLock()) return;
         mDrager.smoothSlideViewTo(mContentView, contentDestX, contentDestY);
         ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
         isMenuViewVisible = true;
     }
 
     public void closeMenuView() {
-        if (!isMenuViewVisible) return;
+        if (!isMenuViewVisible || isLock()) return;
         mDrager.smoothSlideViewTo(mContentView, contentLeft, contentTop);
         ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
         isMenuViewVisible = false;
+    }
+
+    public void setSlideGravity(@SlideGravity int slideGravity) {
+        this.mSlideGravity = slideGravity;
+        if (mCallback != null) {
+            mCallback.setGravity(mSlideGravity);
+        }
     }
 
     public boolean isLock() {
@@ -149,6 +152,14 @@ public class SlipperyLayout extends RelativeLayout {
 
     public boolean isMenuViewVisible() {
         return isMenuViewVisible;
+    }
+
+    public View getMenuView() {
+        return mMenuView;
+    }
+
+    public View getContentView() {
+        return mContentView;
     }
 
     private int menuLeft;
@@ -176,10 +187,12 @@ public class SlipperyLayout extends RelativeLayout {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        contentLeft = l;
-        contentTop = t;
-        contentRight = r;
-        contentBottom = b;
+        Log.i(TAG, "onLayout: " + l + " " + t + " " + r + " " + b);
+        MarginLayoutParams params = (MarginLayoutParams) getLayoutParams();
+        contentLeft = getPaddingLeft();
+        contentTop = getPaddingTop();
+        contentRight = getMeasuredWidth() - getPaddingRight();
+        contentBottom = getMeasuredHeight() - getPaddingBottom();
         for (int i = getChildCount() - 1; i > 1; i--) {
             removeViewAt(i);
         }
@@ -215,9 +228,11 @@ public class SlipperyLayout extends RelativeLayout {
                 menuBottom = contentTop;
                 contentDestX = contentLeft;
                 contentDestY = contentTop + mMaxSlideDistanceY;
-
                 break;
         }
+        /**
+         * 注意，这里的 left、top、right、bottom 都是相对于父布局的。
+         */
         mContentView.layout(contentLeft, contentTop, contentRight, contentBottom);
         mMenuView.layout(menuLeft, menuTop, menuRight, menuBottom);
     }
@@ -269,10 +284,9 @@ public class SlipperyLayout extends RelativeLayout {
                 break;
             case MotionEvent.ACTION_MOVE:
                 int moveGravity = getSlideGravityByMotionEvent(ev);
-                //There need rethink.
                 if (((moveGravity | mSlideGravity) & (RIGHT | LEFT)) != 0 &&
                         ((moveGravity | mSlideGravity) & (TOP | BOTTOM)) != 0
-                        && mState != STATE_DRAGGING) {
+                        && mState == STATE_IDLE) {
                     getParent().requestDisallowInterceptTouchEvent(false);
                 }
                 break;
@@ -334,11 +348,11 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public int clampViewPositionHorizontal(View child, int left, int dx) {
+            mState = STATE_DRAGGING;
             if (isLock) return 0;
             if (((RIGHT | LEFT) & mGravity) == 0) {
                 return 0;
             }
-            mState = STATE_DRAGGING;
             int arg1 = mGravity == LEFT ? -1 : 1;
             if (child == mContentView) {
                 return getValueWithLimit(arg1 * mMaxSlideDistanceX, 0, left);
@@ -352,11 +366,11 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public int clampViewPositionVertical(View child, int top, int dy) {
+            mState = STATE_DRAGGING;
             if (isLock) return 0;
             if (((TOP | BOTTOM) & mGravity) == 0) {
                 return 0;
             }
-            mState = STATE_DRAGGING;
             int arg1 = mGravity == TOP ? -1 : 1;
             if (child == mContentView) {
                 return getValueWithLimit(arg1 * mMaxSlideDistanceY, 0, top);
@@ -389,6 +403,9 @@ public class SlipperyLayout extends RelativeLayout {
             } else {
                 mMenuView.setVisibility(View.VISIBLE);
                 isMenuViewVisible = true;
+            }
+            if (contentLeft + currentTransferX == contentDestX
+                    || contentTop + currentTransferY == contentDestY) {
                 mState = STATE_IDLE;
             }
         }
