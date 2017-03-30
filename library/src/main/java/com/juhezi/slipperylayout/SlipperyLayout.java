@@ -150,6 +150,10 @@ public class SlipperyLayout extends RelativeLayout {
         return isLock;
     }
 
+    public void setLock(boolean lock) {
+        isLock = lock;
+    }
+
     public boolean isMenuViewVisible() {
         return isMenuViewVisible;
     }
