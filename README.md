@@ -1,6 +1,7 @@
 # SlipperyLayout
 
 ![minSdkVersion 21](https://img.shields.io/badge/minSdkVersion-15-blue.svg)
+[![](https://jitpack.io/v/qiaoyunrui/SlipperyLayout.svg)](https://jitpack.io/#qiaoyunrui/SlipperyLayout)
 
 This is a simple ViewGroup that support sliding to show menu, you can set the sliding direction, left、right、top、bottom.
 
@@ -14,6 +15,24 @@ In addition, it also solved the problem of the sliding conflict, so you can put 
 
 ## dependencies
 
+Step 1. Add the JitPack repository to your build file
+
+  Add it in your root build.gradle at the end of repositories:
+  ```gradle
+	allprojects {
+		repositories {
+			...
+			maven { url 'https://jitpack.io' }
+		}
+	}
+  ```
+Step 2. Add the dependency
+
+  ```gradle
+  dependencies {
+	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.0'
+  }
+  ```
 
 ## Usage
 

@@ -1,6 +1,7 @@
 # SlipperyLayout
 
 ![minSdkVersion 21](https://img.shields.io/badge/minSdkVersion-15-blue.svg)
+[![](https://jitpack.io/v/qiaoyunrui/SlipperyLayout.svg)](https://jitpack.io/#qiaoyunrui/SlipperyLayout)
 
 这是一款提供侧滑功能的 ViewGroup，可以设置它的滑动方向：左、右、上、下。
 另外，它也解决了滑动冲突的问题，所以你可以把它放在你的 RecyclerView 或者 ListView 中。
@@ -13,7 +14,24 @@
 
 ## 依赖
 
+Step 1. 添加 JitPack 仓库
 
+  Add it in your root build.gradle at the end of repositories:
+  ```gradle
+	allprojects {
+		repositories {
+			...
+			maven { url 'https://jitpack.io' }
+		}
+	}
+  ```
+Step 2. 添加依赖
+
+  ```gradle
+  dependencies {
+	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.0'
+  }
+  ```
 ## 用法
 
 添加到你的布局文件中：
