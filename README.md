@@ -85,4 +85,4 @@ SlipperyLayout supports the `Padding` and `Margin`, but does not support `elevat
 
 If you met what problem in use process, please create the issue or send an email to me, my email is juhezix@163.com.
 
-[中文 README](README_ZH.md)
+[中文 README](README_CN.md)
