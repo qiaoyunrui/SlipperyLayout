@@ -187,7 +187,6 @@ public class SlipperyLayout extends RelativeLayout {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        Log.i(TAG, "onLayout: " + l + " " + t + " " + r + " " + b);
         MarginLayoutParams params = (MarginLayoutParams) getLayoutParams();
         contentLeft = getPaddingLeft();
         contentTop = getPaddingTop();
@@ -276,19 +275,64 @@ public class SlipperyLayout extends RelativeLayout {
         }
     }
 
+    private final static int OBJECT_NONE = 0;
+    private final static int OBJECT_PARENT = 1;
+    private final static int OBJECT_SELF = 2;
+
+    @IntDef({OBJECT_NONE, OBJECT_PARENT, OBJECT_SELF})
+    private @interface ScrollObject {
+    }
+
+    @ScrollObject
+    private int scrollObject = OBJECT_NONE;
+    private boolean firstMove;
+
+    /**
+     * 一旦开始拦截了，那么这个事件序列会一直拦截
+     * 一旦不拦截，那么就一直不拦截
+     *
+     * @param ev
+     * @return
+     */
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                firstMove = true;
+                scrollObject = OBJECT_NONE;
                 getParent().requestDisallowInterceptTouchEvent(true);
                 break;
             case MotionEvent.ACTION_MOVE:
                 int moveGravity = getSlideGravityByMotionEvent(ev);
                 if (((moveGravity | mSlideGravity) & (RIGHT | LEFT)) != 0 &&
                         ((moveGravity | mSlideGravity) & (TOP | BOTTOM)) != 0
-                        && mState == STATE_IDLE) {
-                    getParent().requestDisallowInterceptTouchEvent(false);
+                        && mState == STATE_IDLE) {    //不拦截
+                    if (firstMove) { //第一次移动
+                        getParent().requestDisallowInterceptTouchEvent(false);
+                        scrollObject = OBJECT_PARENT;
+                        firstMove = false;
+                    } else {    //之后的移动，根据滑动对象判断是否进行拦截
+                        if (scrollObject == OBJECT_PARENT) {
+                            getParent().requestDisallowInterceptTouchEvent(false);
+                        } else {
+                            getParent().requestDisallowInterceptTouchEvent(true);
+                        }
+                    }
+                } else {
+                    if (firstMove) {
+                        scrollObject = OBJECT_SELF;
+                        getParent().requestDisallowInterceptTouchEvent(false);
+                        firstMove = false;
+                    } else {
+                        if (scrollObject == OBJECT_SELF) {
+                            getParent().requestDisallowInterceptTouchEvent(true);
+                        } else {
+                            getParent().requestDisallowInterceptTouchEvent(false);
+                        }
+                    }
                 }
+                break;
+            case MotionEvent.ACTION_UP:
                 break;
         }
         return super.dispatchTouchEvent(ev);
@@ -405,7 +449,7 @@ public class SlipperyLayout extends RelativeLayout {
                 isMenuViewVisible = true;
             }
             if (contentLeft + currentTransferX == contentDestX
-                    || contentTop + currentTransferY == contentDestY) {
+                    && contentTop + currentTransferY == contentDestY) {
                 mState = STATE_IDLE;
             }
         }
