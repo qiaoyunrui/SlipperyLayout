@@ -29,7 +29,7 @@ Step 2. 添加依赖
 
   ```gradle
   dependencies {
-	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.0'
+	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.1'
   }
   ```
 ## 用法
