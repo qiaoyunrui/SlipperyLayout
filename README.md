@@ -102,7 +102,7 @@ Methods provided:
 
 * `public void removeSlideListener()`，remove the setted listener
 
-### SlideListener 中提供的方法
+### Methods provided in the SlideListener
 
 * `public void onSliding(View menuView, int dx, int dy)`
 
