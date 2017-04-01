@@ -96,6 +96,20 @@ mBtnClose.setOnClickListener(new View.OnClickListener() {
 
 * `public void closeMenuView()`，关闭菜单视图
 
+* `public void setSlideListener()`，设置监听器
+
+* `public void removeSlideListener()`，移除监听器
+
+### SlideListener 中提供的方法
+
+* `public void onSliding(View menuView, int dx, int dy)`，当滑动的时候调用
+
+* `public void onMenuOpened(View menuView)`，当打开菜单视图的时候调用
+
+* `public void onMenuClosed(View menuView)`，当关闭菜单视图的时候调用
+
+* `public void onStateChanged(@SlipperyLayout.State int oldState, @SlipperyLayout.State int newState)`，当 SlipperyLayout 的状态发生改变的时候调用
+
 ## 注意
 
 SlipperyLayout 支持 Padding 和 Margin，但是不支持 elevation。

@@ -98,7 +98,21 @@ Methods provided:
 
 * `public void closeMenuView()`,close menu
 
-## Aattention
+* `public void setSlideListener()`，set the listener
+
+* `public void removeSlideListener()`，remove the setted listener
+
+### SlideListener 中提供的方法
+
+* `public void onSliding(View menuView, int dx, int dy)`
+
+* `public void onMenuOpened(View menuView)`
+
+* `public void onMenuClosed(View menuView)`
+
+* `public void onStateChanged(@SlipperyLayout.State int oldState, @SlipperyLayout.State int newState)`
+
+## Attention
 
 SlipperyLayout supports the `Padding` and `Margin`, but does not support `elevation`.
 
