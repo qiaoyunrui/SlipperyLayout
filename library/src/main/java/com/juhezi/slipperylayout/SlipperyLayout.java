@@ -9,7 +9,6 @@ import android.support.annotation.LayoutRes;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,7 +34,7 @@ public class SlipperyLayout extends RelativeLayout {
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({STATE_IDLE, STATE_DRAGGING, STATE_SETTLING})
-    private @interface State {
+    public @interface State {
     }
 
     public static final int LEFT = 1;
@@ -47,7 +46,7 @@ public class SlipperyLayout extends RelativeLayout {
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({LEFT, RIGHT, TOP, BOTTOM})
-    private @interface SlideGravity {
+    public @interface SlideGravity {
     }
 
     private static final int MIN_FLING_VELOCITY = 800;  //dips per second
@@ -77,6 +76,8 @@ public class SlipperyLayout extends RelativeLayout {
 
     private int contentDestX;
     private int contentDestY;
+
+    private SlideListener mSlideListener;
 
     public SlipperyLayout(Context context) {
         this(context, null);
@@ -129,14 +130,14 @@ public class SlipperyLayout extends RelativeLayout {
         if (isMenuViewVisible || isLock()) return;
         mDrager.smoothSlideViewTo(mContentView, contentDestX, contentDestY);
         ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
-        isMenuViewVisible = true;
+//        changeMenuVisible(true);
     }
 
     public void closeMenuView() {
         if (!isMenuViewVisible || isLock()) return;
         mDrager.smoothSlideViewTo(mContentView, contentLeft, contentTop);
         ViewCompat.postInvalidateOnAnimation(SlipperyLayout.this);
-        isMenuViewVisible = false;
+//        changeMenuVisible(false);
     }
 
     public void setSlideGravity(@SlideGravity int slideGravity) {
@@ -164,6 +165,14 @@ public class SlipperyLayout extends RelativeLayout {
 
     public View getContentView() {
         return mContentView;
+    }
+
+    public void setSlideListener(SlideListener slideListener) {
+        this.mSlideListener = slideListener;
+    }
+
+    public void removeSlideListener() {
+        this.mSlideListener = null;
     }
 
     private int menuLeft;
@@ -396,11 +405,11 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public int clampViewPositionHorizontal(View child, int left, int dx) {
-            mState = STATE_DRAGGING;
             if (isLock) return 0;
             if (((RIGHT | LEFT) & mGravity) == 0) {
                 return 0;
             }
+            changeStateIfNotRepeated(STATE_DRAGGING);
             int arg1 = mGravity == LEFT ? -1 : 1;
             if (child == mContentView) {
                 return getValueWithLimit(arg1 * mMaxSlideDistanceX, 0, left);
@@ -414,11 +423,11 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public int clampViewPositionVertical(View child, int top, int dy) {
-            mState = STATE_DRAGGING;
             if (isLock) return 0;
             if (((TOP | BOTTOM) & mGravity) == 0) {
                 return 0;
             }
+            changeStateIfNotRepeated(STATE_DRAGGING);
             int arg1 = mGravity == TOP ? -1 : 1;
             if (child == mContentView) {
                 return getValueWithLimit(arg1 * mMaxSlideDistanceY, 0, top);
@@ -432,6 +441,9 @@ public class SlipperyLayout extends RelativeLayout {
 
         @Override
         public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
+            if (mSlideListener != null) {
+                mSlideListener.onSliding(mMenuView, dx, dy);
+            }
             if (changedView == mContentView) {
                 currentTransferX = left - contentLeft;
                 currentTransferY = top - contentTop;
@@ -446,21 +458,21 @@ public class SlipperyLayout extends RelativeLayout {
             }
             if (currentTransferX == 0 && currentTransferY == 0) {
                 mMenuView.setVisibility(View.GONE);
-                isMenuViewVisible = false;
-                mState = STATE_IDLE;
+                changeMenuVisible(false);
+                changeStateIfNotRepeated(STATE_IDLE);
             } else {
                 mMenuView.setVisibility(View.VISIBLE);
-                isMenuViewVisible = true;
+                changeMenuVisible(true);
             }
             if (contentLeft + currentTransferX == contentDestX
                     && contentTop + currentTransferY == contentDestY) {
-                mState = STATE_IDLE;
+                changeStateIfNotRepeated(STATE_IDLE);
             }
         }
 
         @Override
         public void onViewReleased(View releasedChild, float xvel, float yvel) {
-            mState = STATE_SETTLING;
+            changeStateIfNotRepeated(STATE_SETTLING);
             boolean isSlideToLeft;
             boolean isSlideToTop;
             int destX = contentLeft;
@@ -538,6 +550,44 @@ public class SlipperyLayout extends RelativeLayout {
 
     private boolean isCaptured(View child) {
         return child == mMenuView || child == mContentView;
+    }
+
+    private void changeStateIfNotRepeated(@State int newState) {
+        int oldState = mState;
+        if (mState != newState) {   // State has Changed
+            mState = newState;
+            if (mSlideListener != null) {
+                mSlideListener.onStateChanged(oldState, mState);
+            }
+        }
+    }
+
+    private void changeMenuVisible(boolean visible) {
+        if (isMenuViewVisible != visible) {     //no-equals
+            isMenuViewVisible = visible;
+            if (mSlideListener != null) {
+                if (isMenuViewVisible) {
+                    mSlideListener.onMenuOpened(mMenuView);
+                } else {
+                    mSlideListener.onMenuClosed(mMenuView);
+                }
+            }
+        }
+    }
+
+    public abstract static class SlideListener {
+
+        public void onSliding(View menuView, int dx, int dy) {
+        }
+
+        public void onMenuOpened(View menuView) {
+        }
+
+        public void onMenuClosed(View menuView) {
+        }
+
+        public abstract void onStateChanged(@State int oldState, @State int newState);
+
     }
 
 }

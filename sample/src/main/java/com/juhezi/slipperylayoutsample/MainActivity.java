@@ -3,6 +3,7 @@ package com.juhezi.slipperylayoutsample;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -18,6 +19,8 @@ public class MainActivity extends AppCompatActivity {
     private Button mBtnList;
     private RelativeLayout mRlLike;
     private RelativeLayout mRlUnlike;
+
+    public static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +47,22 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, ListActivity.class);
                 startActivity(intent);
+            }
+        });
+        mSlTest.setSlideListener(new SlipperyLayout.SlideListener() {
+
+            @Override
+            public void onStateChanged(@SlipperyLayout.State int oldState, @SlipperyLayout.State int newState) {
+            }
+
+            @Override
+            public void onMenuOpened(View menuView) {
+                Log.i(TAG, "onMenuOpened: ");
+            }
+
+            @Override
+            public void onMenuClosed(View menuView) {
+                Log.i(TAG, "onMenuClosed: ");
             }
         });
         mRlLike = (RelativeLayout) mSlTest.getMenuView().findViewById(R.id.rl_like);
