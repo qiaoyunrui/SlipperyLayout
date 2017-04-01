@@ -30,7 +30,7 @@ Step 2. Add the dependency
 
   ```gradle
   dependencies {
-	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.0'
+	       compile 'com.github.qiaoyunrui:SlipperyLayout:v1.1'
   }
   ```
 
